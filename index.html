@@ -1330,23 +1330,26 @@ function genOCPDF(){
         obsLines.forEach(l=>{doc.text(l,M+3,y);y+=4;});y+=4;
       }else{y+=4;}
 
-      // Signatures
+      // Signatures + Footer anclados al fondo de la página A4
+      const H=297,footerH=8,sigH=28;
+      const footerY=H-footerH;                          // 289mm — footer siempre al fondo
+      const sigY=Math.max(y+6, footerY-sigH);          // firmas justo encima del footer
+
       const sw=70;
       doc.setDrawColor(42,63,88);doc.setLineWidth(0.4);
-      doc.line(M,y+14,M+sw,y+14);doc.line(W-M-sw,y+14,W-M,y+14);
+      doc.line(M,sigY+14,M+sw,sigY+14);doc.line(W-M-sw,sigY+14,W-M,sigY+14);
       doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(26,37,53);
-      doc.text(g('ocCompResp').value||'Responsable Compra',M+sw/2,y+18,{align:'center'});
-      doc.text('Juan Gabriel Muñoz Moya',W-M-sw/2,y+18,{align:'center'});
+      doc.text(g('ocCompResp').value||'Responsable Compra',M+sw/2,sigY+18,{align:'center'});
+      doc.text('Juan Gabriel Muñoz Moya',W-M-sw/2,sigY+18,{align:'center'});
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(107,124,147);
-      doc.text(g('ocComp').value||'Empresa Compradora',M+sw/2,y+22,{align:'center'});
-      doc.setTextColor(232,119,34);doc.text('Director - PREVEX360',W-M-sw/2,y+22,{align:'center'});
-      y+=26;
+      doc.text(g('ocComp').value||'Empresa Compradora',M+sw/2,sigY+22,{align:'center'});
+      doc.setTextColor(232,119,34);doc.text('Director - PREVEX360',W-M-sw/2,sigY+22,{align:'center'});
 
-      // Footer
-      doc.setFillColor(13,27,46);doc.rect(0,y,W,8,'F');
+      // Footer siempre en el fondo
+      doc.setFillColor(13,27,46);doc.rect(0,footerY,W,footerH,'F');
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(143,163,184);
-      doc.text('OC N '+ocNum+' | Ref. Cotizacion: '+(g('ocCotRef').value||'-'),M,y+5);
-      doc.setTextColor(232,119,34);doc.text('contacto@prevex360.cl',W-M,y+5,{align:'right'});
+      doc.text('OC N '+ocNum+' | Ref. Cotizacion: '+(g('ocCotRef').value||'-'),M,footerY+5);
+      doc.setTextColor(232,119,34);doc.text('contacto@prevex360.cl',W-M,footerY+5,{align:'right'});
 
       doc.save('OC_'+ocNum+'_'+ocComp.replace(/\s+/g,'_')+'.pdf');
       toast('OC generada','Orden de compra '+ocNum+' descargada.','success');
