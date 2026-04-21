@@ -1048,17 +1048,16 @@ async function analyzePDF(){
     const cotMatch=fullText.match(/\b(COT-\d+)\b/);
     if(cotMatch)g('ocCotRef').value=cotMatch[1];
 
-    // Empresa cliente
-    const compMatch=fullText.match(/EMPRESA\s+(.+?)\s+RUT\b/);
-    if(compMatch)g('ocComp').value=compMatch[1].trim();
-
-    // RUT
-    const rutMatch=fullText.match(/\bRUT\s+([\d.]+[-\dkK]+)/);
-    if(rutMatch)g('ocCompRut').value=rutMatch[1].trim();
-
-    // Contacto
-    const contactMatch=fullText.match(/ATENCI[OÓ]N A\s+(.+?)\s+UBICACI[OÓ]N/);
-    if(contactMatch)g('ocCompResp').value=contactMatch[1].trim();
+    // Empresa, RUT y Contacto: extracción posicional (las etiquetas y valores están en líneas distintas)
+    const posBelow=(lbl,tol=80)=>{
+      const l=textItems.find(i=>i.str===lbl||i.str.startsWith(lbl));
+      if(!l)return null;
+      const hits=textItems.filter(i=>Math.abs(i.x-l.x)<tol&&i.y>l.y+5&&i.y<l.y+30);
+      return hits.length?hits[0].str.trim():null;
+    };
+    const comp=posBelow('EMPRESA');   if(comp)g('ocComp').value=comp;
+    const rut=posBelow('RUT');        if(rut)g('ocCompRut').value=rut;
+    const cont=posBelow('ATENCI');    if(cont)g('ocCompResp').value=cont;
 
     // Ítems de la tabla
     const parsedItems=extractPDFItems(textItems);
@@ -1077,7 +1076,7 @@ async function analyzePDF(){
 
 function extractPDFItems(textItems){
   // Busca el encabezado "DESCRIPCIÓN" y "Subtotal" como límites de la tabla
-  const hdr=textItems.find(i=>i.str==='DESCRIPCIÓN'||i.str==='DESCRIPCION');
+  const hdr=textItems.find(i=>i.str.startsWith('DESCRIPCI'));
   const sub=textItems.find(i=>i.str==='Subtotal');
   if(!hdr||!sub)return[];
 
