@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cotizador Prevex360</title>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
 /** @license
  *
@@ -911,7 +912,7 @@ document.addEventListener('DOMContentLoaded',()=>{
     <div style="margin-bottom:18px;">
       <div class="ai-badge">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
-        Claude AI · Extracción automática
+        PDF.js · Lectura sin conexión
       </div>
       <div style="font-size:18px;font-weight:700;color:#1a2535;">Nueva Orden de Compra</div>
       <div style="font-size:12px;color:#6b7c93;margin-top:3px;">Sube una cotización PDF generada por Prevex360 para autocompletar</div>
@@ -929,9 +930,9 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <button class="analyze-btn" id="analyzeBtn" onclick="analyzePDF()" disabled>
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span id="analyzeLbl">Analizar con Claude AI</span>
+      <span id="analyzeLbl">Leer PDF</span>
     </button>
-    <div class="analyze-status" id="analyzeStatus">Procesando PDF con Claude...</div>
+    <div class="analyze-status" id="analyzeStatus">Procesando PDF...</div>
 
     <div class="sep"></div>
     <div style="font-size:12px;font-weight:700;color:#6b7c93;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px;">Datos de la Orden de Compra</div>
@@ -998,7 +999,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 </script>
 
 <script>
-let pdfBase64='';
+let pdfFile=null;
 let ocItems=[{d:'',q:1,p:''}];
 
 function handleFileSelect(input){
@@ -1006,9 +1007,7 @@ function handleFileSelect(input){
   if(!file)return;
   document.getElementById('uploadLabel').textContent='📄 '+file.name;
   document.getElementById('analyzeBtn').disabled=false;
-  const reader=new FileReader();
-  reader.onload=e=>{pdfBase64=e.target.result.split(',')[1];};
-  reader.readAsDataURL(file);
+  pdfFile=file;
 }
 
 function handleDrop(e){
@@ -1016,72 +1015,96 @@ function handleDrop(e){
   document.getElementById('uploadZone').classList.remove('drag');
   const file=e.dataTransfer.files[0];
   if(file&&file.type==='application/pdf'){
-    document.getElementById('pdfUpload').files;
     document.getElementById('uploadLabel').textContent='📄 '+file.name;
     document.getElementById('analyzeBtn').disabled=false;
-    const reader=new FileReader();
-    reader.onload=ev=>{pdfBase64=ev.target.result.split(',')[1];};
-    reader.readAsDataURL(file);
+    pdfFile=file;
   }
 }
 
 async function analyzePDF(){
-  if(!pdfBase64){toast('Sin archivo','Sube primero un PDF de cotización.');return;}
+  if(!pdfFile){toast('Sin archivo','Sube primero un PDF de cotización.');return;}
   const btn=document.getElementById('analyzeBtn');
   const lbl=document.getElementById('analyzeLbl');
   const status=document.getElementById('analyzeStatus');
-  btn.disabled=true;lbl.textContent='Analizando...';status.classList.add('show');
-  status.textContent='Claude está leyendo el PDF...';
+  btn.disabled=true;lbl.textContent='Leyendo...';status.classList.add('show');
+  status.textContent='Extrayendo texto del PDF...';
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        messages:[{
-          role:'user',
-          content:[
-            {type:'document',source:{type:'base64',media_type:'application/pdf',data:pdfBase64}},
-            {type:'text',text:`Extrae los datos de esta cotización y responde SOLO con JSON (sin markdown), con esta estructura exacta:
-{
-  "cotNum": "número de cotización",
-  "clientName": "nombre empresa cliente",
-  "clientRut": "RUT cliente",
-  "clientContact": "nombre contacto",
-  "serviceTitle": "título del servicio",
-  "projectName": "nombre del proyecto",
-  "moneda": "CLP o UF o USD",
-  "items": [{"desc":"descripción","qty":1,"price":0}],
-  "plazo": "plazo de entrega",
-  "total": "valor total como texto"
-}`}
-          ]
-        }]
-      })
-    });
-    const data=await res.json();
-    const txt=data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
-    const clean=txt.replace(/```json|```/g,'').trim();
-    const parsed=JSON.parse(clean);
-    // Fill OC fields
-    if(parsed.cotNum)g('ocCotRef').value=parsed.cotNum;
-    if(parsed.clientName)g('ocComp').value=parsed.clientName;
-    if(parsed.clientRut)g('ocCompRut').value=parsed.clientRut;
-    if(parsed.clientContact)g('ocCompResp').value=parsed.clientContact;
-    if(parsed.items&&parsed.items.length){
-      ocItems=parsed.items.map(i=>({d:i.desc||'',q:i.qty||1,p:i.price||''}));
-      renderOcItems();
+    pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf=await pdfjsLib.getDocument({data:await pdfFile.arrayBuffer()}).promise;
+    let textItems=[];
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const content=await page.getTextContent();
+      const vp=page.getViewport({scale:1});
+      content.items.forEach(item=>{
+        if(!item.str.trim())return;
+        textItems.push({str:item.str.trim(),x:item.transform[4],y:vp.height-item.transform[5]});
+      });
     }
+    textItems.sort((a,b)=>Math.abs(a.y-b.y)<3?a.x-b.x:a.y-b.y);
+    const fullText=textItems.map(i=>i.str).join(' ');
+
+    // Cotización N°
+    const cotMatch=fullText.match(/\b(COT-\d+)\b/);
+    if(cotMatch)g('ocCotRef').value=cotMatch[1];
+
+    // Empresa cliente
+    const compMatch=fullText.match(/EMPRESA\s+(.+?)\s+RUT\b/);
+    if(compMatch)g('ocComp').value=compMatch[1].trim();
+
+    // RUT
+    const rutMatch=fullText.match(/\bRUT\s+([\d.]+[-\dkK]+)/);
+    if(rutMatch)g('ocCompRut').value=rutMatch[1].trim();
+
+    // Contacto
+    const contactMatch=fullText.match(/ATENCI[OÓ]N A\s+(.+?)\s+UBICACI[OÓ]N/);
+    if(contactMatch)g('ocCompResp').value=contactMatch[1].trim();
+
+    // Ítems de la tabla
+    const parsedItems=extractPDFItems(textItems);
+    if(parsedItems.length){ocItems=parsedItems;renderOcItems();}
+
     rndOC();
-    status.textContent='✓ Datos extraídos exitosamente';
-    toast('PDF analizado','Los datos fueron importados desde la cotización.','success');
+    status.textContent='✓ Datos extraídos correctamente';
+    toast('PDF leído','Datos importados desde la cotización.','success');
   }catch(e){
-    status.textContent='Error al analizar el PDF.';
-    toast('Error al analizar',e.message);
+    status.textContent='Error al leer el PDF.';
+    toast('Error al leer',e.message);
     console.error(e);
   }
-  btn.disabled=false;lbl.textContent='Analizar con Claude AI';
+  btn.disabled=false;lbl.textContent='Leer PDF';
+}
+
+function extractPDFItems(textItems){
+  // Busca el encabezado "DESCRIPCIÓN" y "Subtotal" como límites de la tabla
+  const hdr=textItems.find(i=>i.str==='DESCRIPCIÓN'||i.str==='DESCRIPCION');
+  const sub=textItems.find(i=>i.str==='Subtotal');
+  if(!hdr||!sub)return[];
+
+  const tbl=textItems.filter(i=>i.y>hdr.y+2&&i.y<sub.y-1);
+
+  // Los qtys son números enteros (1-999) en la columna central (x 300-410pt en A4 pt)
+  const qtyAnchors=tbl.filter(i=>i.x>300&&i.x<410&&/^\d{1,3}$/.test(i.str));
+
+  return qtyAnchors.map(anchor=>{
+    const ry=anchor.y;
+    // Descripción: columna izquierda (x<250pt), tolerancia vertical de 12pt para wraps
+    const desc=tbl.filter(i=>i.x<250&&Math.abs(i.y-ry)<12)
+                  .sort((a,b)=>a.y-b.y||a.x-b.x).map(i=>i.str).join(' ');
+    // Precios: columna derecha (x>400pt), misma fila (tolerancia 3pt)
+    const prices=tbl.filter(i=>i.x>400&&Math.abs(i.y-ry)<3).sort((a,b)=>a.x-b.x);
+    // El primer precio (más a la izquierda) = precio unitario
+    const unitPrice=prices[0]?parsePricePDF(prices[0].str):'';
+    return{d:desc||'',q:parseInt(anchor.str)||1,p:unitPrice};
+  }).filter(i=>i.d);
+}
+
+function parsePricePDF(str){
+  str=str.trim();
+  if(str.startsWith('$'))return str.slice(1).replace(/\./g,'');   // CLP: $1.234.567 → 1234567
+  if(str.endsWith(' UF'))return str.slice(0,-3);                   // UF: 1.23 UF → 1.23
+  if(str.startsWith('USD '))return str.slice(4).replace(',','');   // USD: USD 1,234.56 → 1234.56
+  return str.replace(/[^\d.]/g,'');
 }
 
 function addOcItem(){ocItems.push({d:'',q:1,p:''});renderOcItems();rndOC();}
@@ -1101,6 +1124,14 @@ function calcOC(){
   return{sub,iva,tot:sub+iva};
 }
 function fmtCLP(v){return'$'+Math.round(v).toLocaleString('es-CL');}
+
+function safeDateOC(raw){
+  if(!raw)return'-';
+  const d=new Date(raw+'T12:00:00');
+  const months=['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  return d.getDate()+' de '+months[d.getMonth()]+' de '+d.getFullYear();
+}
+
 function fmtDateLong(raw){if(!raw)return'—';return new Date(raw+'T12:00:00').toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'});}
 
 function buildOCDoc(){
@@ -1109,11 +1140,11 @@ function buildOCDoc(){
   const ocCotRef=g('ocCotRef').value||'—';
   const ocFecReq=g('ocFecReq').value;
   const ocProv=g('ocProv').value||'PREVEX360';
-  const ocProvCont=g('ocProvCont').value||'—';
-  const ocProvEmail=g('ocProvEmail').value||'—';
-  const ocComp=g('ocComp').value||'—';
-  const ocCompRut=g('ocCompRut').value||'—';
-  const ocCompResp=g('ocCompResp').value||'—';
+  const ocProvCont=g('ocProvCont').value||'-';
+  const ocProvEmail=g('ocProvEmail').value||'-';
+  const ocComp=g('ocComp').value||'-';
+  const ocCompRut=g('ocCompRut').value||'-';
+  const ocCompResp=g('ocCompResp').value||'-';
   const ocObs=g('ocObs').value||'';
   const {sub,iva,tot}=calcOC();
 
@@ -1199,10 +1230,10 @@ function rndOC(){
 
 function genOCPDF(){
   const ocNum=g('ocNum').value||'OC-001';
-  const ocComp=g('ocComp').value||'comprador';
-  if(!ocComp||ocComp==='—'){toast('Campo requerido','Ingresa la empresa compradora.');return;}
-  const btn=event.target.closest('button');
-  btn.disabled=true;btn.textContent='Generando...';
+  const ocComp=g('ocComp').value||'';
+  if(!ocComp.trim()){toast('Campo requerido','Ingresa la empresa compradora.');return;}
+  const btn=document.querySelector('#tab-oc .bprim:last-of-type');
+  if(btn){btn.disabled=true;btn.textContent='Generando...';}
 
   setTimeout(()=>{
     try{
@@ -1227,7 +1258,7 @@ function genOCPDF(){
       doc.setFont('helvetica','bold');doc.setFontSize(14);doc.setTextColor(232,119,34);
       doc.text(ocNum,W-M,18,{align:'right'});
       doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(143,163,184);
-      doc.text(fmtDateLong(g('ocDate').value),W-M,24,{align:'right'});
+      doc.text(safeDateOC(g('ocDate').value),W-M,24,{align:'right'});
       y=36;
 
       // Orange bar
@@ -1241,7 +1272,7 @@ function genOCPDF(){
       doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(143,163,184);
       doc.text('COTIZACIÓN REFERENCIA',M+2,y+5);doc.text('FECHA REQUERIDA',W/2+2,y+5);
       doc.setFont('helvetica','bold');doc.setFontSize(9);doc.setTextColor(26,37,53);
-      doc.text(g('ocCotRef').value||'—',M+2,y+11);doc.text(fmtDateLong(g('ocFecReq').value),W/2+2,y+11);
+      doc.text(g('ocCotRef').value||'-',M+2,y+11);doc.text(safeDateOC(g('ocFecReq').value),W/2+2,y+11);
       y+=18;
 
       // Provider + Buyer cards
@@ -1309,13 +1340,13 @@ function genOCPDF(){
       doc.text('Juan Gabriel Muñoz Moya',W-M-sw/2,y+18,{align:'center'});
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(107,124,147);
       doc.text(g('ocComp').value||'Empresa Compradora',M+sw/2,y+22,{align:'center'});
-      doc.setTextColor(232,119,34);doc.text('Director — PREVEX360',W-M-sw/2,y+22,{align:'center'});
+      doc.setTextColor(232,119,34);doc.text('Director - PREVEX360',W-M-sw/2,y+22,{align:'center'});
       y+=26;
 
       // Footer
       doc.setFillColor(13,27,46);doc.rect(0,y,W,8,'F');
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(143,163,184);
-      doc.text('OC N° '+ocNum+' · Ref. Cotización: '+(g('ocCotRef').value||'—'),M,y+5);
+      doc.text('OC N '+ocNum+' | Ref. Cotizacion: '+(g('ocCotRef').value||'-'),M,y+5);
       doc.setTextColor(232,119,34);doc.text('contacto@prevex360.cl',W-M,y+5,{align:'right'});
 
       doc.save('OC_'+ocNum+'_'+ocComp.replace(/\s+/g,'_')+'.pdf');
@@ -1323,7 +1354,7 @@ function genOCPDF(){
     }catch(e){
       console.error(e);toast('Error al generar OC',e.message);
     }
-    btn.disabled=false;btn.innerHTML='⬇ Generar OC PDF';
+    if(btn){btn.disabled=false;btn.textContent='Generar OC PDF';}
   },50);
 }
 
@@ -1333,7 +1364,7 @@ function clearOC(){
   g('ocDate').value=new Date().toISOString().split('T')[0];
   g('ocFecReq').value='';
   ocItems=[{d:'',q:1,p:''}];renderOcItems();rndOC();
-  pdfBase64='';
+  pdfFile=null;
   g('uploadLabel').textContent='Subir cotización en PDF';
   g('analyzeBtn').disabled=true;
   g('analyzeStatus').classList.remove('show');
