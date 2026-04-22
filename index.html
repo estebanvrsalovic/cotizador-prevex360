@@ -513,6 +513,7 @@ header{background:var(--nav);border-bottom:2px solid var(--or);padding:14px 32px
       <div class="fg"><textarea id="c2" oninput="rnd()">No se efectuarán operaciones no previamente cotizadas y aprobadas.</textarea></div>
       <div class="fg"><textarea id="c3" oninput="rnd()">Las mediciones se realizarán previa coordinación, siempre que las condiciones climáticas y operativas lo permitan.</textarea></div>
       <div class="fg"><textarea id="c4" oninput="rnd()">Condiciones de Pago: 50% de anticipo al aceptar la cotización y 50% restante al momento de la entrega de documentos o prestación del servicio, mediante transferencia electrónica.</textarea></div>
+      <div class="fg"><textarea id="c5" oninput="rnd()">Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11</textarea></div>
     </div>
     <div class="acts">
       <button class="bsec" onclick="clearAll()">Limpiar</button>
@@ -783,7 +784,7 @@ function genPDF(){
       y+=16;
 
       // ── CONDITIONS
-      const conds=[1,2,3,4].map(n=>val('c'+n)).filter(c=>c.trim());
+      const conds=[1,2,3,4,5].map(n=>val('c'+n)).filter(c=>c.trim());
       if(conds.length){
         doc.setFillColor(247,250,253);doc.rect(M,y,W-M*2,conds.length*9+8,'F');
         doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(13,27,46);
@@ -847,6 +848,7 @@ function clearAll(){
   g('c2').value='No se efectuarán operaciones no previamente cotizadas y aprobadas.';
   g('c3').value='Las mediciones se realizarán previa coordinación, siempre que las condiciones climáticas y operativas lo permitan.';
   g('c4').value='Condiciones de Pago: 50% de anticipo al aceptar la cotización y 50% restante al momento de la entrega de documentos o prestación del servicio, mediante transferencia electrónica.';
+  g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11';
   items=[{d:'',q:1,p:''}];renderItems();rnd();
   toast('Formulario limpiado','Todos los campos restablecidos.','info');
 }
@@ -1200,6 +1202,15 @@ function buildOCDoc(){
       <tr><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#0d1b2e;">TOTAL</td><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#e87722;text-align:right;">${fmtCLP(tot)}</td></tr>
     </table></div>
     ${ocObs?`<div style="margin-top:16px;padding:12px 14px;background:#f7fafd;border-radius:6px;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2e;margin-bottom:5px;">Observaciones</div><div style="font-size:10px;color:#4a6080;line-height:1.6;">${ocObs}</div></div>`:''}
+    <div style="margin-top:16px;padding:12px 14px;background:#fff8f2;border-left:3px solid #e87722;border-radius:6px;">
+      <div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2e;margin-bottom:5px;">Datos para Transferencia Bancaria</div>
+      <div style="font-size:10px;color:#4a6080;line-height:1.8;">
+        <span style="font-weight:600;color:#1a2535;">Banco:</span> Banco de Chile &nbsp;|&nbsp;
+        <span style="font-weight:600;color:#1a2535;">Tipo de cuenta:</span> Cuenta Vista &nbsp;|&nbsp;
+        <span style="font-weight:600;color:#1a2535;">N°:</span> 00-014-15261-11
+      </div>
+    </div>
+    ${(()=>{const conds=[1,2,3,4,5].map(n=>val('c'+n)).filter(c=>c&&c.trim());return conds.length?`<div style="margin-top:16px;padding:12px 14px;background:#f7fafd;border-radius:6px;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2e;margin-bottom:8px;">Consideraciones Generales</div>${conds.map((c,i)=>`<div style="font-size:10px;color:#4a6080;line-height:1.6;margin-bottom:4px;"><span style="font-weight:600;color:#0d1b2e;">${i+1}.</span> ${c}</div>`).join('')}</div>`:'';})()}
     <table style="width:100%;border-collapse:collapse;margin-top:24px;">
       <tr>
         <td style="width:45%;text-align:center;padding:0 10px;">
@@ -1329,6 +1340,31 @@ function genOCPDF(){
         const obsLines=doc.splitTextToSize(g('ocObs').value,W-M*2-6);
         obsLines.forEach(l=>{doc.text(l,M+3,y);y+=4;});y+=4;
       }else{y+=4;}
+
+      // Bank transfer info
+      doc.setFillColor(255,248,242);doc.rect(M,y,W-M*2,16,'F');
+      doc.setDrawColor(232,119,34);doc.setLineWidth(0.8);doc.line(M,y,M,y+16);
+      doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(13,27,46);
+      doc.text('DATOS PARA TRANSFERENCIA BANCARIA',M+4,y+5);
+      doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(74,96,128);
+      doc.text('Banco: Banco de Chile',M+4,y+10);
+      doc.text('Tipo de cuenta: Cuenta Vista   |   N°: 00-014-15261-11',M+4,y+14);
+      y+=20;
+
+      // Conditions from cotización
+      const ocConds=[1,2,3,4,5].map(n=>val('c'+n)).filter(c=>c.trim());
+      if(ocConds.length){
+        const condBlockH=ocConds.length*9+8;
+        doc.setFillColor(247,250,253);doc.rect(M,y,W-M*2,condBlockH,'F');
+        doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(13,27,46);
+        doc.text('CONSIDERACIONES GENERALES',M+3,y+5);y+=8;
+        ocConds.forEach((c,i)=>{
+          doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(74,96,128);
+          const lines=doc.splitTextToSize(`${i+1}. ${c}`,W-M*2-6);
+          lines.forEach(l=>{doc.text(l,M+3,y);y+=4;});
+        });
+        y+=4;
+      }
 
       // Signatures + Footer anclados al fondo de la página A4
       const H=297,footerH=8,sigH=28;
