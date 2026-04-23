@@ -715,7 +715,7 @@ function genPDF(){
       y+=24;
 
       // ── SERVICE TITLE
-      y+=4;
+      y+=12;
       doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(13,27,46);
       doc.text(val('svcTtl')||'Servicio Profesional',M,y);y+=5;
       doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(122,155,184);
@@ -798,35 +798,36 @@ function genPDF(){
         y+=4;
       }
 
-      // ── VALIDITY BAR
-      doc.setFillColor(13,27,46);doc.rect(0,y,W,8,'F');
+      // ── VALIDITY BAR + FOOTER — anclados al fondo de la página A4
+      const H=297,footerH=26,validityH=8;
+      const footerY=H-footerH;
+      const validityY=footerY-validityH;
+
+      doc.setFillColor(13,27,46);doc.rect(0,validityY,W,validityH,'F');
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(143,163,184);
-      doc.text('Vigencia: ',M,y+5);
+      doc.text('Vigencia: ',M,validityY+5);
       const vw=doc.getTextWidth('Vigencia: ');
       doc.setTextColor(232,119,34);doc.setFont('helvetica','bold');
-      doc.text((val('vig')||30)+' días',M+vw,y+5);
+      doc.text((val('vig')||30)+' días',M+vw,validityY+5);
       doc.setTextColor(143,163,184);doc.setFont('helvetica','normal');
-      doc.text(' desde la fecha de emisión',M+vw+doc.getTextWidth((val('vig')||30)+' días'),y+5);
+      doc.text(' desde la fecha de emisión',M+vw+doc.getTextWidth((val('vig')||30)+' días'),validityY+5);
       doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');
-      doc.text('Juan Gabriel Muñoz Moya | Prevex360',W-M,y+5,{align:'right'});
-      y+=8;
+      doc.text('Juan Gabriel Muñoz Moya | Prevex360',W-M,validityY+5,{align:'right'});
 
-      // ── FOOTER
-      doc.setFillColor(21,34,54);doc.rect(0,y,W,26,'F');
+      doc.setFillColor(21,34,54);doc.rect(0,footerY,W,footerH,'F');
       doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(255,255,255);
-      doc.text('PREVEX360',M,y+7);
+      doc.text('PREVEX360',M,footerY+7);
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(143,163,184);
-      doc.text('Servicios transversales en Prevención de Riesgos',M,y+12);
-      doc.text('Salud Ocupacional e Higiene Industrial',M,y+16);
+      doc.text('Servicios transversales en Prevención de Riesgos',M,footerY+12);
+      doc.text('Salud Ocupacional e Higiene Industrial',M,footerY+16);
       doc.setTextColor(232,119,34);
-      doc.text('contacto@prevex360.cl',M,y+20);
-      // Signature
+      doc.text('contacto@prevex360.cl',M,footerY+20);
       doc.setDrawColor(42,63,88);doc.setLineWidth(0.4);
-      doc.line(W-50,y+18,W-M,y+18);
+      doc.line(W-50,footerY+18,W-M,footerY+18);
       doc.setFont('helvetica','bold');doc.setFontSize(7);doc.setTextColor(255,255,255);
-      doc.text('Juan Gabriel Muñoz Moya',W-M,y+22,{align:'right'});
+      doc.text('Juan Gabriel Muñoz Moya',W-M,footerY+22,{align:'right'});
       doc.setTextColor(232,119,34);doc.setFontSize(6.5);
-      doc.text('Director — Prevex360',W-M,y+26,{align:'right'});
+      doc.text('Director — Prevex360',W-M,footerY+26,{align:'right'});
 
       // ── SAVE
       doc.save(`Cotizacion_${cotNum}_${cliName.replace(/\s+/g,'_')}.pdf`);
