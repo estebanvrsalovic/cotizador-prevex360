@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Estructura PDF Cotización</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #e8edf2; font-family: 'Segoe UI', sans-serif; padding: 40px 20px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+  h1 { font-size: 13px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: #6b7c93; }
+
+  .page {
+    width: 420px;
+    background: #fff;
+    box-shadow: 0 8px 40px rgba(0,0,0,.18);
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* Annotations */
+  .row { position: relative; }
+  .label {
+    position: absolute;
+    right: -170px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 155px;
+    background: #fff;
+    border: 1px solid #dde3ec;
+    border-radius: 5px;
+    padding: 5px 9px;
+    font-size: 10px;
+    color: #4a6080;
+    line-height: 1.4;
+  }
+  .label strong { display: block; font-size: 11px; color: #0d1b2e; margin-bottom: 1px; }
+  .label::before {
+    content: '';
+    position: absolute;
+    left: -18px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 1px; background: #b0bfcf;
+  }
+  .label::after {
+    content: '';
+    position: absolute;
+    left: -20px; top: 50%; transform: translateY(-50%);
+    width: 5px; height: 5px; border-radius: 50%; background: #e87722;
+  }
+
+  /* ── SECTIONS ── */
+
+  .s-header {
+    background: #0d1b2e;
+    padding: 14px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 52px;
+  }
+  .s-header .logo-area { display: flex; align-items: center; gap: 8px; }
+  .s-header .hex {
+    width: 22px; height: 22px;
+    background: none;
+    border: 2px solid #e87722;
+    clip-path: polygon(50% 0%,93% 25%,93% 75%,50% 100%,7% 75%,7% 25%);
+    background: transparent;
+    position: relative;
+  }
+  .s-header .logo-txt { font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 1px; }
+  .s-header .logo-txt span { color: #e87722; }
+  .s-header .logo-sub { font-size: 6px; color: #7a9bb8; margin-top: 1px; }
+  .s-header .cot-num { text-align: right; }
+  .s-header .cot-num .lbl { font-size: 6px; color: #8fa3b8; letter-spacing: 2px; text-transform: uppercase; }
+  .s-header .cot-num .num { font-size: 13px; font-weight: 700; color: #e87722; }
+  .s-header .cot-num .fecha { font-size: 6px; color: #8fa3b8; }
+
+  .s-orange {
+    background: #e87722;
+    padding: 5px 18px;
+    font-size: 7px; font-weight: 700; color: #fff; letter-spacing: 2px; text-transform: uppercase;
+  }
+
+  .s-client {
+    background: #f2f6fb;
+    border-left: 3px solid #e87722;
+    padding: 8px 18px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 0;
+  }
+  .s-client .cell .lbl { font-size: 6px; font-weight: 700; color: #8fa3b8; text-transform: uppercase; letter-spacing: 1px; }
+  .s-client .cell .val { font-size: 8px; font-weight: 700; color: #1a2535; margin-top: 1px; }
+
+  .s-service {
+    padding: 10px 18px 6px;
+    border-bottom: 1px solid #e0eaf4;
+  }
+  .s-service .ttl { font-size: 12px; font-weight: 700; color: #0d1b2e; }
+  .s-service .proj { font-size: 6px; font-weight: 700; color: #7a9bb8; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+  .s-service .desc { font-size: 6.5px; color: #4a6080; margin-top: 4px; line-height: 1.5; background: #f8fafc; border-radius: 3px; padding: 4px 6px; }
+
+  .s-table-head {
+    background: #0d1b2e;
+    display: grid;
+    grid-template-columns: 1fr 40px 56px 56px;
+    padding: 4px 18px;
+  }
+  .s-table-head span { font-size: 6px; font-weight: 700; color: #fff; letter-spacing: 1px; text-transform: uppercase; }
+  .s-table-head span:not(:first-child) { text-align: right; }
+
+  .s-table-body {}
+  .s-row {
+    display: grid;
+    grid-template-columns: 1fr 40px 56px 56px;
+    padding: 5px 18px;
+    border-bottom: 1px solid #e0eaf4;
+  }
+  .s-row:nth-child(even) { background: #f7fafd; }
+  .s-row span { font-size: 7px; color: #2a3f58; }
+  .s-row span:not(:first-child) { text-align: right; }
+  .s-row span:last-child { font-weight: 700; }
+
+  .s-totals {
+    display: flex;
+    justify-content: flex-end;
+    padding: 6px 18px 8px;
+  }
+  .s-totals table { width: 130px; border-collapse: collapse; }
+  .s-totals td { font-size: 7px; color: #4a6080; padding: 2px 0; border-bottom: 1px solid #e0eaf4; }
+  .s-totals tr:last-child td { font-size: 11px; font-weight: 700; border: none; padding-top: 4px; }
+  .s-totals tr:last-child td:first-child { color: #0d1b2e; }
+  .s-totals tr:last-child td:last-child { color: #e87722; text-align: right; }
+  .s-totals td:last-child { text-align: right; }
+
+  .s-boxes {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 0 18px 10px;
+  }
+  .s-box {
+    background: #f2f6fb;
+    border-radius: 4px;
+    padding: 5px 8px;
+  }
+  .s-box .lbl { font-size: 6px; font-weight: 700; color: #8fa3b8; text-transform: uppercase; letter-spacing: 1px; }
+  .s-box .val { font-size: 8px; font-weight: 700; color: #1a2535; margin-top: 2px; }
+
+  .s-conditions {
+    margin: 0 18px 10px;
+    background: #f7fafd;
+    border-radius: 4px;
+    padding: 6px 8px;
+  }
+  .s-conditions .ttl { font-size: 6px; font-weight: 700; color: #0d1b2e; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
+  .s-conditions .item { font-size: 6.5px; color: #4a6080; padding: 2px 0; border-bottom: 1px dashed #e0eaf4; }
+  .s-conditions .item:last-child { border: none; }
+
+  .s-validity {
+    background: #0d1b2e;
+    padding: 5px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .s-validity .left { font-size: 6.5px; color: #8fa3b8; }
+  .s-validity .left span { color: #e87722; font-weight: 700; }
+  .s-validity .right { font-size: 6.5px; font-weight: 700; color: #fff; }
+
+  .s-footer {
+    background: #152236;
+    padding: 12px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .s-footer .left { font-size: 6px; color: #8fa3b8; line-height: 1.8; }
+  .s-footer .left strong { color: #fff; font-size: 7px; }
+  .s-footer .left .email { color: #e87722; }
+  .s-footer .right { text-align: right; }
+  .s-footer .right .line { width: 80px; height: 1px; background: #2a3f58; margin: 0 0 3px auto; }
+  .s-footer .right .name { font-size: 7px; font-weight: 700; color: #fff; }
+  .s-footer .right .role { font-size: 6px; color: #e87722; }
+
+  /* dimension badges */
+  .dim {
+    position: absolute;
+    left: -46px; top: 50%; transform: translateY(-50%);
+    font-size: 9px; font-weight: 600; color: #e87722;
+    background: #fff3e8;
+    border: 1px solid #e87722;
+    border-radius: 3px;
+    padding: 1px 5px;
+    white-space: nowrap;
+  }
+
+  .wrapper {
+    position: relative;
+    width: 420px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Estructura PDF — Cotización Prevex360</h1>
+
+<div class="wrapper">
+  <div class="page">
+
+    <!-- 1. HEADER -->
+    <div class="row s-header">
+      <div class="dim">36 mm</div>
+      <div class="logo-area">
+        <div class="hex"></div>
+        <div>
+          <div class="logo-txt">PREVEX<span>360</span></div>
+          <div class="logo-sub">Prevención · Salud Ocupacional · Higiene Industrial</div>
+        </div>
+      </div>
+      <div class="cot-num">
+        <div class="lbl">COTIZACIÓN</div>
+        <div class="num">COT-001</div>
+        <div class="fecha">1 de enero de 2026</div>
+      </div>
+      <div class="label"><strong>① Header</strong>Fondo azul oscuro. Logo + hexágono (izq). N° COT + fecha (der, naranja).</div>
+    </div>
+
+    <!-- 2. BARRA NARANJA -->
+    <div class="row s-orange">
+      <div class="dim">9 mm</div>
+      PROPUESTA DE SERVICIOS PROFESIONALES
+      <div class="label"><strong>② Barra naranja</strong>Subtítulo del documento en mayúsculas.</div>
+    </div>
+
+    <!-- 3. CLIENTE -->
+    <div class="row s-client">
+      <div class="dim">22 mm</div>
+      <div class="cell"><div class="lbl">Empresa</div><div class="val">Razón Social S.A.</div></div>
+      <div class="cell"><div class="lbl">RUT</div><div class="val">76.123.456-7</div></div>
+      <div class="cell"><div class="lbl">Atención a</div><div class="val">Nombre Contacto</div></div>
+      <div class="cell"><div class="lbl">Ubicación</div><div class="val">Comuna, Región</div></div>
+      <div class="label"><strong>③ Bloque cliente</strong>Fondo gris + borde naranja izq. 2 filas × 2 columnas.</div>
+    </div>
+
+    <!-- 4. SERVICIO -->
+    <div class="row s-service">
+      <div class="dim">var.</div>
+      <div class="ttl">Título del Servicio Profesional</div>
+      <div class="proj">Proyecto: Nombre del Proyecto</div>
+      <div class="desc">Descripción técnica del servicio. Puede ocupar varias líneas según el contenido ingresado por el usuario en el formulario...</div>
+      <div class="label"><strong>④ Servicio</strong>Título grande, subtítulo proyecto, descripción con wrap automático.</div>
+    </div>
+
+    <!-- 5. TABLA ÍTEMS -->
+    <div class="row">
+      <div class="dim">var.</div>
+      <div class="s-table-head">
+        <span>Descripción</span><span>Cant.</span><span>P. Unit.</span><span>Total</span>
+      </div>
+      <div class="s-table-body">
+        <div class="s-row"><span>Servicio de medición de ruido</span><span>1</span><span>$ 150.000</span><span>$ 150.000</span></div>
+        <div class="s-row"><span>Informe técnico de resultados</span><span>2</span><span>$ 80.000</span><span>$ 160.000</span></div>
+        <div class="s-row"><span>Otro ítem de ejemplo...</span><span>1</span><span>$ 50.000</span><span>$ 50.000</span></div>
+      </div>
+      <div class="label"><strong>⑤ Tabla ítems</strong>Encabezado azul. Filas alternas blanco/gris. Precios formateados según moneda (CLP/UF/USD).</div>
+    </div>
+
+    <!-- 6. TOTALES -->
+    <div class="row s-totals">
+      <div class="dim">var.</div>
+      <table>
+        <tr><td>Subtotal</td><td>$ 360.000</td></tr>
+        <tr><td>IVA (19%)</td><td>$ 68.400</td></tr>
+        <tr><td>TOTAL</td><td style="color:#e87722;text-align:right;">$ 428.400</td></tr>
+      </table>
+      <div class="label"><strong>⑥ Totales</strong>Alineado a la derecha (65 mm). Subtotal → IVA → TOTAL en naranja/bold.</div>
+    </div>
+
+    <!-- 7. CAJAS -->
+    <div class="row s-boxes">
+      <div class="dim">12 mm</div>
+      <div class="s-box"><div class="lbl">Plazo de entrega</div><div class="val">6 días hábiles</div></div>
+      <div class="s-box"><div class="lbl">Fecha propuesta inicio</div><div class="val">15 de enero de 2026</div></div>
+      <div class="label"><strong>⑦ Cajas info</strong>2 columnas iguales con fondo gris redondeado.</div>
+    </div>
+
+    <!-- 8. CONDICIONES -->
+    <div class="row s-conditions">
+      <div class="dim">var.</div>
+      <div class="ttl">Consideraciones Generales</div>
+      <div class="item">1. La validez de esta cotización es de 30 días desde la fecha de envío.</div>
+      <div class="item">2. No se efectuarán operaciones no previamente cotizadas y aprobadas.</div>
+      <div class="item">3. Las mediciones se realizarán previa coordinación con el cliente.</div>
+      <div class="item">4. Condiciones de Pago: 50% anticipo, 50% al entregar.</div>
+      <div class="item">5. Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11</div>
+      <div class="label"><strong>⑧ Condiciones</strong>Fondo gris. Lista numerada. Solo aparece si hay texto en los campos c1–c5.</div>
+    </div>
+
+    <!-- 9. BARRA VIGENCIA -->
+    <div class="row s-validity">
+      <div class="dim">8 mm</div>
+      <div class="left">Vigencia: <span>30 días</span> desde la fecha de emisión</div>
+      <div class="right">Juan Gabriel Muñoz Moya | Prevex360</div>
+      <div class="label"><strong>⑨ Barra vigencia</strong>Azul oscuro. Vigencia (naranja) a la izq., director a la der.</div>
+    </div>
+
+    <!-- 10. FOOTER -->
+    <div class="row s-footer">
+      <div class="dim">26 mm</div>
+      <div class="left">
+        <strong>PREVEX360</strong><br>
+        Servicios transversales en Prevención de Riesgos<br>
+        Salud Ocupacional e Higiene Industrial<br>
+        <span class="email">contacto@prevex360.cl</span>
+      </div>
+      <div class="right">
+        <div class="line"></div>
+        <div class="name">Juan Gabriel Muñoz Moya</div>
+        <div class="role">Director — Prevex360</div>
+      </div>
+      <div class="label"><strong>⑩ Footer</strong>Azul muy oscuro. Info empresa (izq) + línea de firma con nombre y cargo (der).</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

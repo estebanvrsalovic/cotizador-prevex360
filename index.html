@@ -517,6 +517,7 @@ header{background:var(--nav);border-bottom:2px solid var(--or);padding:14px 32px
     </div>
     <div class="acts">
       <button class="bsec" onclick="clearAll()">Limpiar</button>
+      <button class="bsec" onclick="fillDemo()" style="border-color:#7a9bb8;color:#4a6080;" title="Rellena el formulario con datos de ejemplo">⚗ Datos de prueba</button>
       <button class="bprim" id="btnPDF" onclick="genPDF()"><span class="blbl">⬇ Generar PDF</span><div class="spin"></div></button>
     </div>
   </div>
@@ -567,7 +568,7 @@ function renderItems(){
 function calc(){
   const mon=val('mon');
   const sub=items.reduce((a,i)=>a+(parseFloat(i.p)||0)*(parseFloat(i.q)||1),0);
-  const iva=mon==='CLP'?sub*.19:0;
+  const iva=sub*.19;
   return{sub,iva,tot:sub+iva,mon};
 }
 function fmt(v,mon){
@@ -584,7 +585,7 @@ function fmtDate(raw){
 function buildDocHTML(){
   const cotNum=val('cotNum')||'COT-001';
   const {sub,iva,tot,mon}=calc();
-  const ivaRow=mon==='CLP'?`<tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>`:'';
+  const ivaRow=`<tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>`;
   const rows=items.map((it,idx)=>{
     const p=parseFloat(it.p)||0,q=parseFloat(it.q)||1,bg=idx%2?'#f7fafd':'#fff';
     return`<tr><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;">${it.d||'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:center;">${q}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;">${fmt(p,mon)}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;font-weight:600;">${fmt(p*q,mon)}</td></tr>`;
@@ -617,7 +618,7 @@ function buildDocHTML(){
     <div style="display:flex;justify-content:flex-end;margin-top:8px;"><table style="width:210px;border-collapse:collapse;">
       <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">Subtotal</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(sub,mon)}</td></tr>
       ${ivaRow}
-      <tr><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#0d1b2e;">TOTAL</td><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#e87722;text-align:right;">${fmt(tot,mon)}${mon!=='CLP'?' + IVA':''}</td></tr>
+      <tr><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#0d1b2e;">TOTAL</td><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#e87722;text-align:right;">${fmt(tot,mon)}</td></tr>
     </table></div>
     <table style="width:100%;border-collapse:collapse;margin-top:14px;"><tr>
       <td style="width:50%;padding-right:6px;"><div style="background:#f2f6fb;border-radius:6px;padding:10px 12px;"><div style="font-size:8px;font-weight:700;text-transform:uppercase;color:#8fa3b8;letter-spacing:1px;margin-bottom:3px;">Plazo de entrega</div><div style="font-size:11px;font-weight:600;color:#1a2535;">${val('plazo')||'—'}</div></div></td>
@@ -765,9 +766,9 @@ function genPDF(){
         y+=6;
       };
       drawTotRow('Subtotal',fmt(sub,mon));
-      if(mon==='CLP') drawTotRow('IVA (19%)',fmt(iva,mon));
+      drawTotRow('IVA (19%)',fmt(iva,mon));
       y+=2;
-      drawTotRow('TOTAL',fmt(tot,mon)+(mon!=='CLP'?' + IVA':''),true,true);
+      drawTotRow('TOTAL',fmt(tot,mon),true,true);
       y+=4;
 
       // ── PLAZO / FECHA
@@ -851,6 +852,37 @@ function clearAll(){
   g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11';
   items=[{d:'',q:1,p:''}];renderItems();rnd();
   toast('Formulario limpiado','Todos los campos restablecidos.','info');
+}
+
+function fillDemo(){
+  g('cotNum').value='COT-042';
+  g('cotDate').value='2026-05-06';
+  g('vig').value='30';
+  g('mon').value='CLP';
+  g('cliName').value='Telemining SpA';g('cliName').classList.remove('err');
+  g('cliRut').value='76.543.210-8';g('cliRut').classList.remove('err');
+  g('cliCont').value='Roberto Fuentes';
+  g('cliCom').value='Antofagasta';
+  g('cliReg').value='Antofagasta';
+  g('svcTtl').value='Evaluación de Ruido Ocupacional y Ambiental';g('svcTtl').classList.remove('err');
+  g('proj').value='Proyecto Minero Norte 2026';
+  g('svcDesc').value='Medición y evaluación de ruido ocupacional en puestos de trabajo conforme a DS 594/99. Incluye medición de dosis personales (dosimetría), evaluación de niveles de presión sonora y emisión de informe técnico con recomendaciones de control.';
+  g('plazo').value='10 días hábiles';
+  g('fInicio').value='2026-05-20';
+  g('c1').value='La validez de esta cotización es de 30 días desde la fecha de envío.';
+  g('c2').value='No se efectuarán operaciones no previamente cotizadas y aprobadas.';
+  g('c3').value='Las mediciones se realizarán previa coordinación, siempre que las condiciones climáticas y operativas lo permitan.';
+  g('c4').value='Condiciones de Pago: 50% de anticipo al aceptar la cotización y 50% restante al momento de la entrega de documentos o prestación del servicio, mediante transferencia electrónica.';
+  g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11';
+  document.querySelectorAll('.errmsg').forEach(e=>e.classList.remove('show'));
+  items=[
+    {d:'Medición de ruido ocupacional — dosimetría personal',q:5,p:'85000'},
+    {d:'Evaluación de niveles de presión sonora en fuentes',q:3,p:'60000'},
+    {d:'Informe técnico DS 594 con recomendaciones',q:1,p:'180000'},
+    {d:'Asesoría en implementación de medidas de control',q:2,p:'95000'}
+  ];
+  renderItems();rnd();
+  toast('Datos de prueba cargados','Formulario relleno con datos de ejemplo.','info');
 }
 
 g('cotDate').value=new Date().toISOString().split('T')[0];
@@ -949,6 +981,9 @@ document.addEventListener('DOMContentLoaded',()=>{
         <div class="fg"><label style="display:block;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#6b7c93;margin-bottom:4px;">N° Cotización Ref.</label><input id="ocCotRef" placeholder="COT-001" style="width:100%;background:#f8fafc;border:1px solid #dde3ec;color:#1a2535;padding:8px 11px;border-radius:6px;font-size:13px;outline:none;font-family:inherit;" oninput="rndOC()"></div>
         <div class="fg"><label style="display:block;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#6b7c93;margin-bottom:4px;">Fecha requerida</label><input type="date" id="ocFecReq" style="width:100%;background:#f8fafc;border:1px solid #dde3ec;color:#1a2535;padding:8px 11px;border-radius:6px;font-size:13px;outline:none;font-family:inherit;" oninput="rndOC()"></div>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;">
+        <div class="fg"><label style="display:block;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#6b7c93;margin-bottom:4px;">Moneda</label><select id="ocMon" onchange="rndOC()" style="width:100%;background:#f8fafc;border:1px solid #dde3ec;color:#1a2535;padding:8px 11px;border-radius:6px;font-size:13px;outline:none;font-family:inherit;"><option value="CLP">CLP ($)</option><option value="UF">UF</option><option value="USD">USD</option></select></div>
+      </div>
     </div>
 
     <div class="fsec" style="margin-top:16px;">
@@ -982,6 +1017,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 
     <div style="display:flex;gap:10px;margin-top:18px;">
       <button class="bsec" onclick="clearOC()">Limpiar</button>
+      <button class="bsec" onclick="fillOCDemo()" style="border-color:#7a9bb8;color:#4a6080;" title="Rellena el formulario con datos de ejemplo">⚗ Datos de prueba</button>
       <button class="bprim" onclick="genOCPDF()">⬇ Generar OC PDF</button>
     </div>
   </div>
@@ -1120,11 +1156,11 @@ function renderOcItems(){
 }
 
 function calcOC(){
+  const mon=val('ocMon')||'CLP';
   const sub=ocItems.reduce((a,i)=>a+(parseFloat(i.p)||0)*(parseFloat(i.q)||1),0);
   const iva=sub*.19;
-  return{sub,iva,tot:sub+iva};
+  return{sub,iva,tot:sub+iva,mon};
 }
-function fmtCLP(v){return'$'+Math.round(v).toLocaleString('es-CL');}
 
 function safeDateOC(raw){
   if(!raw)return'-';
@@ -1147,11 +1183,11 @@ function buildOCDoc(){
   const ocCompRut=g('ocCompRut').value||'-';
   const ocCompResp=g('ocCompResp').value||'-';
   const ocObs=g('ocObs').value||'';
-  const {sub,iva,tot}=calcOC();
+  const {sub,iva,tot,mon}=calcOC();
 
   const rows=ocItems.map((it,idx)=>{
     const p=parseFloat(it.p)||0,q=parseFloat(it.q)||1,bg=idx%2?'#f7fafd':'#fff';
-    return`<tr><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;">${it.d||'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:center;">${q}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;">${fmtCLP(p)}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;font-weight:600;">${fmtCLP(p*q)}</td></tr>`;
+    return`<tr><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;">${it.d||'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:center;">${q}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;">${fmt(p,mon)}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;font-weight:600;">${fmt(p*q,mon)}</td></tr>`;
   }).join('');
 
   return`
@@ -1197,9 +1233,9 @@ function buildOCDoc(){
       <th style="background:#0d1b2e;color:#fff;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:7px 10px;text-align:right;width:88px;">Total</th>
     </tr></thead><tbody>${rows}</tbody></table>
     <div style="display:flex;justify-content:flex-end;margin-top:8px;"><table style="width:220px;border-collapse:collapse;">
-      <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">Subtotal</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmtCLP(sub)}</td></tr>
-      <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmtCLP(iva)}</td></tr>
-      <tr><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#0d1b2e;">TOTAL</td><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#e87722;text-align:right;">${fmtCLP(tot)}</td></tr>
+      <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">Subtotal</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(sub,mon)}</td></tr>
+      <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>
+      <tr><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#0d1b2e;">TOTAL</td><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#e87722;text-align:right;">${fmt(tot,mon)}</td></tr>
     </table></div>
     ${ocObs?`<div style="margin-top:16px;padding:12px 14px;background:#f7fafd;border-radius:6px;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2e;margin-bottom:5px;">Observaciones</div><div style="font-size:10px;color:#4a6080;line-height:1.6;">${ocObs}</div></div>`:''}
     <div style="margin-top:16px;padding:12px 14px;background:#fff8f2;border-left:3px solid #e87722;border-radius:6px;">
@@ -1249,7 +1285,7 @@ function genOCPDF(){
     try{
       const {jsPDF}=window.jspdf;
       const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
-      const {sub,iva,tot}=calcOC();
+      const {sub,iva,tot,mon}=calcOC();
       const W=210,M=14;let y=0;
 
       // Header
@@ -1314,8 +1350,8 @@ function genOCPDF(){
         doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(42,63,88);
         doc.text(doc.splitTextToSize(it.d||'—',W-80-M),M,y+4.5);
         doc.text(String(q),W-80,y+4.5,{align:'center'});
-        doc.text(fmtCLP(p),W-55,y+4.5,{align:'right'});
-        doc.setFont('helvetica','bold');doc.text(fmtCLP(p*q),W-M,y+4.5,{align:'right'});
+        doc.text(fmt(p,mon),W-55,y+4.5,{align:'right'});
+        doc.setFont('helvetica','bold');doc.text(fmt(p*q,mon),W-M,y+4.5,{align:'right'});
         y+=h;
       });y+=4;
 
@@ -1329,7 +1365,7 @@ function genOCPDF(){
         doc.setTextColor(orange?232:(bold?13:74),orange?119:(bold?27:96),orange?34:(bold?46:128));
         doc.text(amt,W-M,y+4,{align:'right'});y+=6;
       };
-      drawTR('Subtotal',fmtCLP(sub));drawTR('IVA (19%)',fmtCLP(iva));y+=2;drawTR('TOTAL',fmtCLP(tot),true,true);y+=6;
+      drawTR('Subtotal',fmt(sub,mon));drawTR('IVA (19%)',fmt(iva,mon));y+=2;drawTR('TOTAL',fmt(tot,mon),true,true);y+=6;
 
       // Observations
       if(g('ocObs').value){
@@ -1407,6 +1443,29 @@ function clearOC(){
   g('analyzeBtn').disabled=true;
   g('analyzeStatus').classList.remove('show');
   toast('OC limpiada','Formulario restablecido.','info');
+}
+
+function fillOCDemo(){
+  g('ocNum').value='OC-018';
+  g('ocDate').value='2026-05-06';
+  g('ocCotRef').value='COT-042';
+  g('ocFecReq').value='2026-05-20';
+  g('ocMon').value='CLP';
+  g('ocProv').value='PREVEX360';
+  g('ocProvCont').value='Juan Gabriel Muñoz Moya';
+  g('ocProvEmail').value='contacto@prevex360.cl';
+  g('ocComp').value='Telemining SpA';
+  g('ocCompRut').value='76.543.210-8';
+  g('ocCompResp').value='Roberto Fuentes';
+  g('ocObs').value='Favor coordinar visita con al menos 48 horas de anticipación. Acceso restringido a área operativa — se requiere EPP completo.';
+  ocItems=[
+    {d:'Medición de ruido ocupacional — dosimetría personal',q:5,p:'85000'},
+    {d:'Evaluación de niveles de presión sonora en fuentes',q:3,p:'60000'},
+    {d:'Informe técnico DS 594 con recomendaciones',q:1,p:'180000'},
+    {d:'Asesoría en implementación de medidas de control',q:2,p:'95000'}
+  ];
+  renderOcItems();rndOC();
+  toast('Datos de prueba cargados','Formulario OC relleno con datos de ejemplo.','info');
 }
 </script>
 </body>
