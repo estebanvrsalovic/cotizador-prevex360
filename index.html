@@ -665,7 +665,7 @@ function genPDF(){
 
       // Hexagon logo (simplified lines)
       doc.setDrawColor(232,119,34);doc.setLineWidth(0.8);
-      const hx=M+2,hy=6,hr=8;
+      const hx=M+2,hy=15,hr=8;
       const pts=[[hx,hy+hr],[hx+hr*0.866,hy+hr*0.5],[hx+hr*0.866,hy-hr*0.5],[hx,hy-hr],[hx-hr*0.866,hy-hr*0.5],[hx-hr*0.866,hy+hr*0.5]];
       doc.lines(pts.slice(1).map((p,i)=>[p[0]-pts[i][0],p[1]-pts[i][1]]),pts[0][0],pts[0][1],null,null,true);
       // Checkmark
@@ -698,8 +698,8 @@ function genPDF(){
       y+=9;
 
       // ── CLIENT BLOCK
-      doc.setFillColor(242,246,251);doc.rect(0,y,W,22,'F');
-      doc.setFillColor(232,119,34);doc.rect(0,y,1.5,22,'F');
+      doc.setFillColor(242,246,251);doc.rect(0,y,W,28,'F');
+      doc.setFillColor(232,119,34);doc.rect(0,y,1.5,28,'F');
       const fields=[
         ['EMPRESA',val('cliName')||'—','RUT',val('cliRut')||'—'],
         ['ATENCIÓN A',val('cliCont')||'—','UBICACIÓN',(val('cliCom')||'—')+', '+(val('cliReg')||'—')]
@@ -712,10 +712,10 @@ function genPDF(){
         doc.text(row[1],M+2,fy+4);doc.text(row[3],W/2+2,fy+4);
         fy+=11;
       });
-      y+=24;
+      y+=30;
 
       // ── SERVICE TITLE
-      y+=12;
+      y+=6;
       doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(13,27,46);
       doc.text(val('svcTtl')||'Servicio Profesional',M,y);y+=5;
       doc.setFont('helvetica','bold');doc.setFontSize(6);doc.setTextColor(122,155,184);
@@ -1292,7 +1292,7 @@ function genOCPDF(){
       // Header
       doc.setFillColor(13,27,46);doc.rect(0,0,W,36,'F');
       doc.setDrawColor(232,119,34);doc.setLineWidth(0.8);
-      const hx=M+2,hy=6,hr=8;
+      const hx=M+2,hy=15,hr=8;
       const pts=[[hx,hy+hr],[hx+hr*.866,hy+hr*.5],[hx+hr*.866,hy-hr*.5],[hx,hy-hr],[hx-hr*.866,hy-hr*.5],[hx-hr*.866,hy+hr*.5]];
       doc.lines(pts.slice(1).map((p,i)=>[p[0]-pts[i][0],p[1]-pts[i][1]]),pts[0][0],pts[0][1],null,null,true);
       doc.setLineWidth(0.7);doc.line(hx-3,hy+1,hx-1,hy+3);doc.line(hx-1,hy+3,hx+4,hy-2);
