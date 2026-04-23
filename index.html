@@ -1322,22 +1322,22 @@ function genOCPDF(){
       doc.text(g('ocCotRef').value||'-',M+2,y+11);doc.text(safeDateOC(g('ocFecReq').value),W/2+2,y+11);
       y+=18;
 
-      // Provider + Buyer cards
-      const bw=(W-M*2-6)/2;
-      const drawCard=(x,title,lines2)=>{
-        doc.setFillColor(242,246,251);doc.roundedRect(x,y,bw,20,2,2,'F');
-        doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(143,163,184);
-        doc.text(title,x+4,y+5);
-        let cy=y+10;
-        lines2.forEach((l,i)=>{
-          if(i===0){doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(26,37,53);}
-          else{doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(i===lines2.length-1?232:74,i===lines2.length-1?119:96,i===lines2.length-1?34:128);}
-          doc.text(l,x+4,cy);cy+=4;
-        });
-      };
-      drawCard(M,'PROVEEDOR',[g('ocProv').value||'PREVEX360',g('ocProvCont').value||'—',g('ocProvEmail').value||'—']);
-      drawCard(M+bw+6,'EMPRESA COMPRADORA',[g('ocComp').value||'—','RUT: '+(g('ocCompRut').value||'—'),'Resp.: '+(g('ocCompResp').value||'—')]);
-      y+=24;
+      // Client block (mismo diseño que cotización)
+      doc.setFillColor(242,246,251);doc.rect(0,y,W,28,'F');
+      doc.setFillColor(232,119,34);doc.rect(0,y,1.5,28,'F');
+      const ocFields=[
+        ['EMPRESA COMPRADORA',g('ocComp').value||'—','RUT',g('ocCompRut').value||'—'],
+        ['PROVEEDOR',g('ocProv').value||'PREVEX360','RESPONSABLE',g('ocCompResp').value||'—']
+      ];
+      let ofy=y+6;
+      ocFields.forEach(row=>{
+        doc.setFont('helvetica','normal');doc.setFontSize(6);doc.setTextColor(143,163,184);
+        doc.text(row[0],M+2,ofy);doc.text(row[2],W/2+2,ofy);
+        doc.setFont('helvetica','bold');doc.setFontSize(8);doc.setTextColor(26,37,53);
+        doc.text(row[1],M+2,ofy+4);doc.text(row[3],W/2+2,ofy+4);
+        ofy+=11;
+      });
+      y+=30;
 
       // Items table
       doc.setFillColor(13,27,46);doc.rect(0,y,W,7,'F');
