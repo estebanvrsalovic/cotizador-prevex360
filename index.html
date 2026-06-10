@@ -507,13 +507,17 @@ header{background:var(--nav);border-bottom:2px solid var(--or);padding:14px 32px
       <table class="itbl"><thead><tr><th>Descripción</th><th style="width:60px">Cant.</th><th style="width:85px">Precio</th><th style="width:30px"></th></tr></thead><tbody id="itbody"></tbody></table>
       <button class="badd" onclick="addItem()">＋ Agregar ítem</button>
     </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f7fafd;border:1px solid #e0eaf4;border-radius:8px;margin-bottom:8px;">
+      <div><div style="font-size:11px;font-weight:700;color:#4a6080;letter-spacing:.5px;">IVA (19%)</div><div style="font-size:10px;color:#8fa3b8;margin-top:1px;">Afectar cotización a IVA</div></div>
+      <button id="btnIVA" onclick="toggleIVA()" style="background:#8fa3b8;color:#fff;border:none;padding:6px 18px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:background .2s;letter-spacing:.5px;">Exento de IVA</button>
+    </div>
     <div class="fsec">
       <div class="sttl">Condiciones</div>
       <div class="fg"><textarea id="c1" oninput="rnd()">La validez de esta cotización es de 30 días desde la fecha de envío.</textarea></div>
       <div class="fg"><textarea id="c2" oninput="rnd()">No se efectuarán operaciones no previamente cotizadas y aprobadas.</textarea></div>
       <div class="fg"><textarea id="c3" oninput="rnd()">Las mediciones se realizarán previa coordinación, siempre que las condiciones climáticas y operativas lo permitan.</textarea></div>
       <div class="fg"><textarea id="c4" oninput="rnd()">Condiciones de Pago: 50% de anticipo al aceptar la cotización y 50% restante al momento de la entrega de documentos o prestación del servicio, mediante transferencia electrónica.</textarea></div>
-      <div class="fg"><textarea id="c5" oninput="rnd()">Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11</textarea></div>
+      <div class="fg"><textarea id="c5" oninput="rnd()">Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11 · Rut: 78.397.764-8</textarea></div>
     </div>
     <div class="acts">
       <button class="bsec" onclick="clearAll()">Limpiar</button>
@@ -553,6 +557,7 @@ function validate(){
 
 // Items
 let items=[{d:'',q:1,p:''}];
+let includeIVA=false;
 function addItem(){items.push({d:'',q:1,p:''});renderItems();rnd();}
 function delItem(i){items.splice(i,1);if(!items.length)addItem();renderItems();rnd();}
 function renderItems(){
@@ -568,7 +573,7 @@ function renderItems(){
 function calc(){
   const mon=val('mon');
   const sub=items.reduce((a,i)=>a+(parseFloat(i.p)||0)*(parseFloat(i.q)||1),0);
-  const iva=sub*.19;
+  const iva=includeIVA?sub*.19:0;
   return{sub,iva,tot:sub+iva,mon};
 }
 function fmt(v,mon){
@@ -585,7 +590,7 @@ function fmtDate(raw){
 function buildDocHTML(){
   const cotNum=val('cotNum')||'COT-001';
   const {sub,iva,tot,mon}=calc();
-  const ivaRow=`<tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>`;
+  const ivaRow=includeIVA?`<tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>`:'';
   const rows=items.map((it,idx)=>{
     const p=parseFloat(it.p)||0,q=parseFloat(it.q)||1,bg=idx%2?'#f7fafd':'#fff';
     return`<tr><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;">${it.d||'—'}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:center;">${q}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;">${fmt(p,mon)}</td><td style="padding:7px 10px;border-bottom:1px solid #e0eaf4;background:${bg};font-size:10px;color:#2a3f58;text-align:right;font-weight:600;">${fmt(p*q,mon)}</td></tr>`;
@@ -636,6 +641,13 @@ function buildDocHTML(){
   </div>`;
 }
 
+function toggleIVA(){
+  includeIVA=!includeIVA;
+  const btn=g('btnIVA');
+  btn.textContent=includeIVA?'Afecto a IVA':'Exento de IVA';
+  btn.style.background=includeIVA?'#e87722':'#8fa3b8';
+  rnd();
+}
 function rnd(){g('preview').innerHTML=`<div class="doc">${buildDocHTML()}</div>`;}
 
 // ── PDF GENERATION with embedded jsPDF ──
@@ -766,7 +778,7 @@ function genPDF(){
         y+=6;
       };
       drawTotRow('Subtotal',fmt(sub,mon));
-      drawTotRow('IVA (19%)',fmt(iva,mon));
+      if(includeIVA)drawTotRow('IVA (19%)',fmt(iva,mon));
       y+=2;
       drawTotRow('TOTAL',fmt(tot,mon),true,true);
       y+=4;
@@ -850,7 +862,7 @@ function clearAll(){
   g('c2').value='No se efectuarán operaciones no previamente cotizadas y aprobadas.';
   g('c3').value='Las mediciones se realizarán previa coordinación, siempre que las condiciones climáticas y operativas lo permitan.';
   g('c4').value='Condiciones de Pago: 50% de anticipo al aceptar la cotización y 50% restante al momento de la entrega de documentos o prestación del servicio, mediante transferencia electrónica.';
-  g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11';
+  g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11 · Rut: 78.397.764-8';
   items=[{d:'',q:1,p:''}];renderItems();rnd();
   toast('Formulario limpiado','Todos los campos restablecidos.','info');
 }
@@ -874,7 +886,7 @@ function fillDemo(){
   g('c2').value='No se efectuarán operaciones no previamente cotizadas y aprobadas.';
   g('c3').value='Las mediciones se realizarán previa coordinación, siempre que las condiciones climáticas y operativas lo permitan.';
   g('c4').value='Condiciones de Pago: 50% de anticipo al aceptar la cotización y 50% restante al momento de la entrega de documentos o prestación del servicio, mediante transferencia electrónica.';
-  g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11';
+  g('c5').value='Datos para Transferencia: Banco de Chile — Cuenta Vista N° 00-014-15261-11 · Rut: 78.397.764-8';
   document.querySelectorAll('.errmsg').forEach(e=>e.classList.remove('show'));
   items=[
     {d:'Medición de ruido ocupacional — dosimetría personal',q:5,p:'85000'},
@@ -1011,6 +1023,11 @@ document.addEventListener('DOMContentLoaded',()=>{
       <button class="badd" onclick="addOcItem()">＋ Agregar ítem</button>
     </div>
 
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:#f7fafd;border:1px solid #e0eaf4;border-radius:8px;margin-top:12px;">
+      <div><div style="font-size:11px;font-weight:700;color:#4a6080;letter-spacing:.5px;">IVA (19%)</div><div style="font-size:10px;color:#8fa3b8;margin-top:1px;">Afectar orden de compra a IVA</div></div>
+      <button id="btnOCIVA" onclick="toggleOCIVA()" style="background:#8fa3b8;color:#fff;border:none;padding:6px 18px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;transition:background .2s;letter-spacing:.5px;">Exento de IVA</button>
+    </div>
+
     <div style="margin-top:16px;">
       <label style="display:block;font-size:10px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:#6b7c93;margin-bottom:4px;">Observaciones</label>
       <textarea id="ocObs" placeholder="Instrucciones especiales, condiciones de entrega..." style="width:100%;background:#f8fafc;border:1px solid #dde3ec;color:#1a2535;padding:8px 11px;border-radius:6px;font-size:13px;outline:none;font-family:inherit;resize:vertical;min-height:64px;" oninput="rndOC()"></textarea>
@@ -1040,6 +1057,7 @@ document.addEventListener('DOMContentLoaded',()=>{
 <script>
 let pdfFile=null;
 let ocItems=[{d:'',q:1,p:''}];
+let ocIncludeIVA=false;
 
 function handleFileSelect(input){
   const file=input.files[0];
@@ -1159,7 +1177,7 @@ function renderOcItems(){
 function calcOC(){
   const mon=val('ocMon')||'CLP';
   const sub=ocItems.reduce((a,i)=>a+(parseFloat(i.p)||0)*(parseFloat(i.q)||1),0);
-  const iva=sub*.19;
+  const iva=ocIncludeIVA?sub*.19:0;
   return{sub,iva,tot:sub+iva,mon};
 }
 
@@ -1235,7 +1253,7 @@ function buildOCDoc(){
     </tr></thead><tbody>${rows}</tbody></table>
     <div style="display:flex;justify-content:flex-end;margin-top:8px;"><table style="width:220px;border-collapse:collapse;">
       <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">Subtotal</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(sub,mon)}</td></tr>
-      <tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>
+      ${ocIncludeIVA?`<tr><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;">IVA (19%)</td><td style="padding:4px 0;font-size:10px;color:#4a6080;border-bottom:1px solid #e0eaf4;text-align:right;">${fmt(iva,mon)}</td></tr>`:''}
       <tr><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#0d1b2e;">TOTAL</td><td style="padding:7px 0 0;font-size:15px;font-weight:700;color:#e87722;text-align:right;">${fmt(tot,mon)}</td></tr>
     </table></div>
     ${ocObs?`<div style="margin-top:16px;padding:12px 14px;background:#f7fafd;border-radius:6px;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2e;margin-bottom:5px;">Observaciones</div><div style="font-size:10px;color:#4a6080;line-height:1.6;">${ocObs}</div></div>`:''}
@@ -1244,7 +1262,8 @@ function buildOCDoc(){
       <div style="font-size:10px;color:#4a6080;line-height:1.8;">
         <span style="font-weight:600;color:#1a2535;">Banco:</span> Banco de Chile &nbsp;|&nbsp;
         <span style="font-weight:600;color:#1a2535;">Tipo de cuenta:</span> Cuenta Vista &nbsp;|&nbsp;
-        <span style="font-weight:600;color:#1a2535;">N°:</span> 00-014-15261-11
+        <span style="font-weight:600;color:#1a2535;">N°:</span> 00-014-15261-11 &nbsp;|&nbsp;
+        <span style="font-weight:600;color:#1a2535;">RUT:</span> 78.397.764-8
       </div>
     </div>
     ${(()=>{const conds=[1,2,3,4,5].map(n=>val('c'+n)).filter(c=>c&&c.trim());return conds.length?`<div style="margin-top:16px;padding:12px 14px;background:#f7fafd;border-radius:6px;"><div style="font-size:9px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#0d1b2e;margin-bottom:8px;">Consideraciones Generales</div>${conds.map((c,i)=>`<div style="font-size:10px;color:#4a6080;line-height:1.6;margin-bottom:4px;"><span style="font-weight:600;color:#0d1b2e;">${i+1}.</span> ${c}</div>`).join('')}</div>`:'';})()}
@@ -1270,6 +1289,13 @@ function buildOCDoc(){
   </div>`;
 }
 
+function toggleOCIVA(){
+  ocIncludeIVA=!ocIncludeIVA;
+  const btn=document.getElementById('btnOCIVA');
+  btn.textContent=ocIncludeIVA?'Afecto a IVA':'Exento de IVA';
+  btn.style.background=ocIncludeIVA?'#e87722':'#8fa3b8';
+  rndOC();
+}
 function rndOC(){
   const el=document.getElementById('ocPreview');
   if(el)el.innerHTML=`<div class="doc">${buildOCDoc()}</div>`;
@@ -1366,7 +1392,7 @@ function genOCPDF(){
         doc.setTextColor(orange?232:(bold?13:74),orange?119:(bold?27:96),orange?34:(bold?46:128));
         doc.text(amt,W-M,y+4,{align:'right'});y+=6;
       };
-      drawTR('Subtotal',fmt(sub,mon));drawTR('IVA (19%)',fmt(iva,mon));y+=2;drawTR('TOTAL',fmt(tot,mon),true,true);y+=6;
+      drawTR('Subtotal',fmt(sub,mon));if(ocIncludeIVA)drawTR('IVA (19%)',fmt(iva,mon));y+=2;drawTR('TOTAL',fmt(tot,mon),true,true);y+=6;
 
       // Observations
       if(g('ocObs').value){
@@ -1379,14 +1405,14 @@ function genOCPDF(){
       }else{y+=4;}
 
       // Bank transfer info
-      doc.setFillColor(255,248,242);doc.rect(M,y,W-M*2,16,'F');
-      doc.setDrawColor(232,119,34);doc.setLineWidth(0.8);doc.line(M,y,M,y+16);
+      doc.setFillColor(255,248,242);doc.rect(M,y,W-M*2,20,'F');
+      doc.setDrawColor(232,119,34);doc.setLineWidth(0.8);doc.line(M,y,M,y+20);
       doc.setFont('helvetica','bold');doc.setFontSize(6.5);doc.setTextColor(13,27,46);
       doc.text('DATOS PARA TRANSFERENCIA BANCARIA',M+4,y+5);
       doc.setFont('helvetica','normal');doc.setFontSize(6.5);doc.setTextColor(74,96,128);
-      doc.text('Banco: Banco de Chile',M+4,y+10);
-      doc.text('Tipo de cuenta: Cuenta Vista   |   N°: 00-014-15261-11',M+4,y+14);
-      y+=20;
+      doc.text('Banco de Chile   |   Cuenta Vista N° 00-014-15261-11',M+4,y+11);
+      doc.text('RUT: 78.397.764-8',M+4,y+16);
+      y+=24;
 
       // Conditions from cotización
       const ocConds=[1,2,3,4,5].map(n=>val('c'+n)).filter(c=>c.trim());
